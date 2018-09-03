@@ -1,0 +1,56 @@
+<?php
+$tns = "
+(DESCRIPTION =
+    (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = SISDB.DARALHEKMA.EDU.SA)(PORT = 1521))
+    )
+    (CONNECT_DATA =
+      (SERVICE_NAME = DAH.DARALHEKMA.EDU.SA)
+    )
+  ) ";
+
+//=============================================Send Email===========================================================
+$conn = oci_connect("DAHPC", "sisowner11g",$tns);
+if (!$conn) {
+   $m = oci_error();
+   echo $m['message'], "\n";
+   exit;
+}
+
+
+$query = oci_parse($conn, "select STU_ID,STU_NAME,STU_MAJOR,OPER_TYPE,OPER_NAME,OPER_DATE,DAH_EMAIL
+                                        from DAH_V_IN_OUTSTUDENTS where OPER_DATE=to_date('12-DEC-16','DD-MON-YY') AND OPER_ID IN (16,23,29,21,31,30,22,3,26,17,15,13,28,12,14,8)");
+if (oci_num_rows($query) !=null) {
+        $result = "<table border='1' style='border-collapse:collapse;font-family:Calibri;font-size:15px;'>";
+	$result .= "<tr><th style='padding:5px 5px 5px 5px;color:#770000;'>Date</th>
+	<th style='padding:5px 5px 5px 5px;color:#770000;'>Student_ID</th><th style='padding:5px 5px 5px 5px;color:#770000;'>Room</th>
+	<th style='padding:5px 5px 5px 5px;color:#770000;'>Student_Name</th>
+	<th style='padding:5px 5px 5px 5px;color:#770000;'>Student_Major</th>
+	<th style='padding:5px 5px 5px 5px;color:#770000;'>Student_Status</th>
+	<th style='padding:5px 5px 5px 5px;color:#770000;'>Student_email</th>
+	</tr>";
+    while ($db_field = oci_fetch_assoc($query)) {
+		
+		$result .= "<tr><td style='padding:5px 5px 5px 5px'>" . $db_field['OPER_DATE'] . "</td>
+		<td style='padding:5px 5px 5px 5px'>" . $db_field['STU_ID'] . "</td>
+		<td style='padding:5px 5px 5px 5px'>" . $db_field['STU_NAME'] . "</td>
+		<td style='padding:5px 5px 5px 5px'>" . $db_field['STU_MAJOR'] . "</td>
+		<td style='padding:5px 5px 5px 5px'>" . $db_field['OPER_NAME'] . "</td>
+		<td style='padding:5px 5px 5px 5px'>" . $db_field['DAH_EMAIL'] . "</td>
+		<td style='padding:5px 5px 5px 5px'>" . $db_field['ITStaff'] . "</td>
+		</tr>"; 
+    }
+    $result .= "</table>";
+	//Send Notification Email to NetworkTeam
+		$to      = 'sfaleet@dah.edu.sa';
+		$subject = 'IN_OUT_students';
+		$message = "<html><body style='font-family:Calibri;font-size:15px;'>Dears,</br>
+      <p>We would like to inform you of the following today:</p>".$result."<br><p style='color:#770000;'>Thank you<br>
+       Dar Al-Hekma University<br>
+       Orientation System</p></body></html>";
+		$headers  = "From: sfaleet@dah.edu.sa\r\n"; 
+    	$headers .= "Content-type: text/html\r\n";
+		$headers .= 'Cc:sfaleet@dah.edu.sa' . "\r\n";
+		$emailResult = mail($to, $subject, $message, $headers);
+}
+?>
